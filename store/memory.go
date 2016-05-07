@@ -2,6 +2,7 @@ package store
 
 type Storage interface {
   Put(key string, value []byte)
+  Get(key string) ([]byte,bool)
 }
 
 type key_pairs map[string][]byte
@@ -16,6 +17,11 @@ func New() Storage {
   }
 }
 
-func (* memory_storage) Put(key string, value []byte) {
-  // do nothing
+func (m * memory_storage) Put(key string, value []byte) {
+  m.items[key] = value
+}
+
+func (m * memory_storage) Get(key string) ([]byte,bool) {
+  value, ok := m.items[key]
+  return value, ok
 }
