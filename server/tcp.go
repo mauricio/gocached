@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 
 	"github.com/mauricio/gocached/store"
 )
@@ -37,11 +38,13 @@ type Server interface {
 }
 
 type tcpServer struct {
-	port    int32
-	host    string
-	running bool
-	storage store.Storage
-	server  net.Listener
+	port         int32
+	host         string
+	running      bool
+	storage      store.Storage
+	server       net.Listener
+	runningMutex sync.Mutex
+	serverMutex  sync.Mutex
 }
 
 type memcachedRequest struct {
@@ -76,21 +79,42 @@ func New(port int32, host string, storage store.Storage) Server {
 	}
 }
 
-func (s *tcpServer) Start() error {
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.host, s.port))
-	s.server = l
+func (s *tcpServer) isRunning() bool {
+	s.runningMutex.Lock()
+	defer s.runningMutex.Unlock()
+	return s.running
+}
 
-	if err == nil {
-		s.running = true
-		go s.AcceptClients()
+func (s *tcpServer) setRunning(value bool) {
+	s.runningMutex.Lock()
+	defer s.runningMutex.Unlock()
+	s.running = value
+}
+
+func (s *tcpServer) Start() error {
+	s.serverMutex.Lock()
+	defer s.serverMutex.Unlock()
+	if !s.isRunning() {
+		l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.host, s.port))
+		s.server = l
+
+		if err == nil {
+			s.setRunning(true)
+			go s.AcceptClients()
+		}
+
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func (s *tcpServer) Stop() error {
-	if s.running {
-		s.running = false
+	s.serverMutex.Lock()
+	defer s.serverMutex.Unlock()
+	
+	if s.isRunning() {
+		s.setRunning(false)
 		return s.server.Close()
 	}
 
@@ -98,13 +122,13 @@ func (s *tcpServer) Stop() error {
 }
 
 func (s *tcpServer) AcceptClients() {
-	for s.running {
+	for s.isRunning() {
 		connection, err := s.server.Accept()
 		if err == nil {
 			go s.HandleConnection(connection)
 		} else {
 			fmt.Errorf("Failed to accept client, stopping: %s\n", err.Error())
-			s.running = false
+			s.setRunning(false)
 		}
 	}
 }
@@ -112,7 +136,7 @@ func (s *tcpServer) AcceptClients() {
 func (s *tcpServer) HandleConnection(connection net.Conn) {
 	defer connection.Close()
 
-	for s.running {
+	for s.isRunning() {
 		var request memcachedRequest
 		err := binary.Read(connection, binary.BigEndian, &request)
 
