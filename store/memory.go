@@ -6,27 +6,27 @@ type Storage interface {
 	Delete(key string)
 }
 
-type key_pairs map[string][]byte
+type keyPairs map[string][]byte
 
-type memory_storage struct {
-	items key_pairs
+type memoryStorage struct {
+	items keyPairs
 }
 
 func New() Storage {
-	return &memory_storage{
-		items: make(key_pairs),
+	return &memoryStorage{
+		items: make(keyPairs),
 	}
 }
 
-func (m *memory_storage) Put(key string, value []byte) {
+func (m *memoryStorage) Put(key string, value []byte) {
 	m.items[key] = value
 }
 
-func (m *memory_storage) Get(key string) ([]byte, bool) {
+func (m *memoryStorage) Get(key string) ([]byte, bool) {
 	value, ok := m.items[key]
 	return value, ok
 }
 
-func (m *memory_storage) Delete(key string) {
+func (m *memoryStorage) Delete(key string) {
 	delete(m.items, key)
 }
