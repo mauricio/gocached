@@ -172,3 +172,23 @@ func TestSetTwice(t *testing.T) {
 
 	})
 }
+
+func TestStartTwice(t *testing.T) {
+	withServer(t, func(items store.Storage, server Server, client *memcache.Client) {
+		err := server.Start()
+
+		if err != nil {
+			t.Error("calling start again should not cause any issues")
+		}
+	})
+}
+
+func TestStopTwice(t *testing.T) {
+	withServer(t, func(items store.Storage, server Server, client *memcache.Client) {
+		err := server.Stop()
+
+		if err != nil {
+			t.Error("calling stop twice should not cause any issues")
+		}
+	})
+}

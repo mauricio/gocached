@@ -112,7 +112,7 @@ func (s *tcpServer) Start() error {
 func (s *tcpServer) Stop() error {
 	s.serverMutex.Lock()
 	defer s.serverMutex.Unlock()
-	
+
 	if s.isRunning() {
 		s.setRunning(false)
 		return s.server.Close()
@@ -127,8 +127,8 @@ func (s *tcpServer) AcceptClients() {
 		if err == nil {
 			go s.HandleConnection(connection)
 		} else {
-			fmt.Errorf("Failed to accept client, stopping: %s\n", err.Error())
-			s.setRunning(false)
+			fmt.Printf("Failed to accept client, stopping: %s\n", err.Error())
+			s.Stop()
 		}
 	}
 }
