@@ -190,5 +190,12 @@ func TestStopTwice(t *testing.T) {
 		if err != nil {
 			t.Error("calling stop twice should not cause any issues")
 		}
+
+		err = server.Stop()
+
+		if err != nil {
+			t.Error("calling stop twice should not cause any issues")
+		}
+
 	})
 }
